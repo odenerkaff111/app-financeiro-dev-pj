@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+// AJUSTE: Link importado para tornar itens clicáveis
+import Link from "next/link";
 import { ArrowDownCircle, ArrowUpCircle, Wallet, Users, AlertCircle, Clock, HeartPulse, Receipt } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
 import { supabase } from "@/lib/supabase";
@@ -40,7 +42,6 @@ export default function DashboardPage() {
       }
     }
 
-    // CORREÇÃO: Áudio restaurado exatamente como você pediu
     if ('speechSynthesis' in window) {
       const agora = Date.now();
       const ultimo = localStorage.getItem('jarvis_last_speak');
@@ -145,7 +146,6 @@ export default function DashboardPage() {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Resumo Financeiro</h1>
-          {/* CORREÇÃO: Texto do cabeçalho restaurado */}
           <p className="text-gray-500 text-sm mt-1">Bem-vindo de volta, {userName}. Este é seu resumo financeiro!</p>
         </div>
         <select className="p-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#0097a7] bg-white shadow-sm text-gray-700 font-medium transition-all" value={filtroPeriodo} onChange={(e) => setFiltroPeriodo(e.target.value)}>
@@ -158,28 +158,22 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
         <div className={cardEstilo}>
-          {/* CORREÇÃO: Receita Gerada */}
           <div className="flex justify-between items-center mb-4"><span className="text-sm font-medium text-gray-500">Receita Gerada</span><ArrowUpCircle className="text-[#0097a7]" size={20} /></div>
           <h3 className="text-3xl font-semibold text-gray-900 tracking-tight">{formatarMoeda(entrada)}</h3>
         </div>
         <div className={cardEstilo}>
-          {/* CORREÇÃO: Saídas */}
           <div className="flex justify-between items-center mb-4"><span className="text-sm font-medium text-gray-500">Saídas</span><ArrowDownCircle className="text-red-500" size={20} /></div>
           <h3 className="text-3xl font-semibold text-gray-900 tracking-tight">{formatarMoeda(saida)}</h3>
         </div>
         <div className={cardEstilo}>
-          {/* CORREÇÃO: Caixa */}
           <div className="flex justify-between items-center mb-4"><span className="text-sm font-medium text-gray-500">Caixa</span><Wallet className="text-[#0a003d]" size={20} /></div>
           <h3 className={`text-3xl font-semibold tracking-tight ${saldo >= 0 ? 'text-gray-900' : 'text-red-600'}`}>{formatarMoeda(saldo)}</h3>
         </div>
-        
         <div className={`${cardEstilo} bg-emerald-50 border-emerald-100`}>
           <div className="flex justify-between items-center mb-4"><span className="text-sm font-medium text-emerald-800">A receber (Mês seguinte)</span><Receipt className="text-emerald-600" size={20} /></div>
           <h3 className="text-3xl font-semibold text-emerald-900 tracking-tight tabular-nums">{formatarMoeda(aReceberProximoMes)}</h3>
         </div>
-        
         <div className={cardEstilo}>
-          {/* CORREÇÃO: Clientes */}
           <div className="flex justify-between items-center mb-4"><span className="text-sm font-medium text-gray-500">Clientes</span><Users className="text-[#ffab40]" size={20} /></div>
           <h3 className="text-3xl font-semibold text-gray-900 tracking-tight">{totalClientesAtivos}</h3>
           <p className="text-xs text-gray-500 mt-2 font-medium"><span className="text-emerald-600">{pagamentosEmDia} em dia</span> | <span className="text-red-500">{pagamentosAtrasados} atrasos</span></p>
@@ -253,19 +247,24 @@ export default function DashboardPage() {
             {lembretes.length > 0 ? lembretes.map(l => {
               const vencido = isAfter(hoje, getSafeDate(l.data_vencimento));
               return (
-                <div key={l.id} className="flex items-center justify-between p-3.5 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+                // AJUSTE: Transformado div em LINK para navegar para registros passando o ID
+                <Link href={`/registros?openId=${l.id}`} key={l.id} className="flex items-center justify-between p-3.5 border border-gray-100 rounded-xl hover:bg-amber-50 hover:border-amber-100 transition-all group cursor-pointer block">
                   <div className="flex items-center gap-4">
-                    <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                    <div className={`w-2 h-2 rounded-full ${vencido ? 'bg-red-500' : 'bg-amber-400'}`}></div>
                     <div>
-                      <p className="font-medium text-gray-900 text-sm">{l.nome || l.descricao}</p>
+                      <p className="font-medium text-gray-900 text-sm group-hover:text-amber-900">{l.nome || l.descricao}</p>
                       <div className="flex items-center gap-1 text-[11px] text-gray-500 mt-0.5 uppercase tracking-wide"><Clock size={10} /> Vencimento: {format(getSafeDate(l.data_vencimento), 'dd/MM/yyyy')}</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium text-gray-900 text-sm">{formatarMoeda(l.valor)}</p>
-                    {vencido ? (<span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">Atrasado</span>) : (<span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Aguardando</span>)}
+                  <div className="text-right flex items-center gap-3">
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{formatarMoeda(l.valor)}</p>
+                      {vencido ? (<span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">Atrasado</span>) : (<span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Aguardando</span>)}
+                    </div>
+                    {/* Ícone sutil para indicar que é clicável no hover */}
+                    <Wallet size={16} className="text-gray-300 group-hover:text-amber-500" />
                   </div>
-                </div>
+                </Link>
               )
             }) : (<div className="text-center text-gray-400 py-6 text-sm">Sem pendências registradas.</div>)}
           </div>

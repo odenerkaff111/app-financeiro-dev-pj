@@ -57,13 +57,19 @@ export function TransactionFormModal({ aberto, onClose, carregarDados, edicaoDat
     setUploading(true);
     let url_nf = edicaoData?.arquivo_nf || null;
     
+    // UPLOAD COM TRAVA DE SEGURANÇA
     if (arquivoNF) {
       const fileExt = arquivoNF.name.split('.').pop();
       const fileName = `${Date.now()}_nf.${fileExt}`;
       const { error: uploadError } = await supabase.storage.from('notas').upload(fileName, arquivoNF);
+      
       if (!uploadError) {
         const { data: publicUrlData } = supabase.storage.from('notas').getPublicUrl(fileName);
         url_nf = publicUrlData.publicUrl;
+      } else {
+        alert("Erro ao enviar a Nota Fiscal pro Supabase: " + uploadError.message);
+        setUploading(false);
+        return; // Interrompe o processo para não salvar pela metade
       }
     }
 
@@ -128,7 +134,7 @@ export function TransactionFormModal({ aberto, onClose, carregarDados, edicaoDat
     }
 
     setUploading(false);
-    if (!error) { carregarDados(); onClose(); } else alert("Erro: " + error.message);
+    if (!error) { carregarDados(); onClose(); } else alert("Erro ao salvar no banco: " + error.message);
   }
 
   async function apagar() {
@@ -229,7 +235,6 @@ export function TransactionFormModal({ aberto, onClose, carregarDados, edicaoDat
                 <select className="w-full p-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#0097a7] bg-white" value={tipoCobranca} disabled={!!edicaoData} onChange={e => setTipoCobranca(e.target.value)}>
                   <option value="Única">Única</option>
                   <option value="Parcelada">Parcelada</option>
-                  {/* AJUSTE: Label alterado de Assinatura para Recorrente */}
                   <option value="Recorrente">Recorrente</option>
                 </select>
               </div>

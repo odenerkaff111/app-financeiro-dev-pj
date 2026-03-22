@@ -15,15 +15,25 @@ const links = [
 export function Sidebar() {
   const pathname = usePathname();
   
+  // URL PÚBLICA DA SUA LOGO NO SUPABASE
+  const LINK_DA_SUA_LOGO = "https://hvtwmsrjxuvwfibtsijd.supabase.co/storage/v1/object/public/avatars/logo.png"; 
+
   return (
     <div className="w-64 min-h-screen bg-[#0a003d] border-r border-[#0a003d] p-6 flex flex-col font-sans">
-      <div className="mb-12 flex items-center gap-3 px-2">
-        <div className="w-8 h-8 bg-[#ffab40] rounded flex items-center justify-center">
-          <span className="text-[#0a003d] font-black text-lg">K</span>
-        </div>
-        <div>
-          <h2 className="text-lg font-bold text-white tracking-tight">Kaff ERP</h2>
-        </div>
+      
+      {/* AJUSTE: Container de logo centralizado horizontalmente */}
+      <div className="mb-12 flex justify-center items-center px-2 min-h-[56px] w-full">
+        {LINK_DA_SUA_LOGO ? (
+          // AJUSTE: Altura aumentada para 56px (h-14)
+          <img src={LINK_DA_SUA_LOGO} alt="Logo Kaff" className="h-14 w-auto object-contain" />
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-[#ffab40] rounded flex items-center justify-center shrink-0">
+              <span className="text-[#0a003d] font-black text-lg">K</span>
+            </div>
+            <h2 className="text-lg font-bold text-white tracking-tight">Kaff ERP</h2>
+          </div>
+        )}
       </div>
       
       <nav className="space-y-1.5 flex-1">
