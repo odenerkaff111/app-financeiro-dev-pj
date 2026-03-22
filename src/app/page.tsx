@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowDownCircle, ArrowUpCircle, Wallet, Users, AlertCircle, Clock, HeartPulse, Receipt } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
 import { supabase } from "@/lib/supabase";
-import { format, isAfter, isSameMonth, isSameWeek, isToday, parseISO } from "date-fns";
+import { format, isAfter, isSameMonth, isSameWeek, isToday, parseISO, addMonths } from "date-fns";
 
 export default function DashboardPage() {
   const [montado, setMontado] = useState(false);
@@ -40,6 +40,7 @@ export default function DashboardPage() {
       }
     }
 
+    // CORREÇÃO: Áudio restaurado exatamente como você pediu
     if ('speechSynthesis' in window) {
       const agora = Date.now();
       const ultimo = localStorage.getItem('jarvis_last_speak');
@@ -60,6 +61,7 @@ export default function DashboardPage() {
   };
 
   const hoje = new Date();
+  const proximoMes = addMonths(hoje, 1);
   
   const dadosFiltrados = transacoes.filter(t => {
     if (filtroPeriodo === "tudo") return true;
@@ -72,6 +74,7 @@ export default function DashboardPage() {
 
   let entrada = 0; let saida = 0;
   let pagamentosEmDia = 0; let pagamentosAtrasados = 0;
+  let aReceberProximoMes = 0; 
   
   const despesasPorCategoria: Record<string, number> = {};
   const graficoMap: Record<string, any> = {};
@@ -90,8 +93,7 @@ export default function DashboardPage() {
       if (t.tipo === 'receita') entrada += valor;
       if (t.tipo === 'despesa') {
         saida += valor;
-        // Dinâmico: Pega exatamente a categoria digitada/selecionada no registro
-        const cat = t.categoria || 'Outros';
+        const cat = t.categoria || 'Despesas';
         despesasPorCategoria[cat] = (despesasPorCategoria[cat] || 0) + valor;
       }
       
@@ -106,6 +108,14 @@ export default function DashboardPage() {
     if (t.tipo === 'receita') {
       if (statusPago) pagamentosEmDia++;
       if ((t.status?.toLowerCase() === 'pendente' || t.status?.toLowerCase() === 'atrasado') && isAfter(hoje, getSafeDate(t.data_vencimento))) pagamentosAtrasados++;
+    }
+  });
+
+  transacoes.forEach(t => {
+    if (t.tipo === 'receita' && t.status?.toLowerCase() === 'pendente') {
+      if (isSameMonth(getSafeDate(t.data_vencimento), proximoMes)) {
+        aReceberProximoMes += Number(t.valor) || 0;
+      }
     }
   });
 
@@ -135,6 +145,7 @@ export default function DashboardPage() {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Resumo Financeiro</h1>
+          {/* CORREÇÃO: Texto do cabeçalho restaurado */}
           <p className="text-gray-500 text-sm mt-1">Bem-vindo de volta, {userName}. Este é seu resumo financeiro!</p>
         </div>
         <select className="p-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#0097a7] bg-white shadow-sm text-gray-700 font-medium transition-all" value={filtroPeriodo} onChange={(e) => setFiltroPeriodo(e.target.value)}>
@@ -145,37 +156,33 @@ export default function DashboardPage() {
         </select>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
         <div className={cardEstilo}>
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-sm font-medium text-gray-500">Receita Gerada</span>
-            <ArrowUpCircle className="text-[#0097a7]" size={20} />
-          </div>
+          {/* CORREÇÃO: Receita Gerada */}
+          <div className="flex justify-between items-center mb-4"><span className="text-sm font-medium text-gray-500">Receita Gerada</span><ArrowUpCircle className="text-[#0097a7]" size={20} /></div>
           <h3 className="text-3xl font-semibold text-gray-900 tracking-tight">{formatarMoeda(entrada)}</h3>
         </div>
         <div className={cardEstilo}>
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-sm font-medium text-gray-500">Saídas</span>
-            <ArrowDownCircle className="text-red-500" size={20} />
-          </div>
+          {/* CORREÇÃO: Saídas */}
+          <div className="flex justify-between items-center mb-4"><span className="text-sm font-medium text-gray-500">Saídas</span><ArrowDownCircle className="text-red-500" size={20} /></div>
           <h3 className="text-3xl font-semibold text-gray-900 tracking-tight">{formatarMoeda(saida)}</h3>
         </div>
         <div className={cardEstilo}>
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-sm font-medium text-gray-500">Caixa</span>
-            <Wallet className="text-[#0a003d]" size={20} />
-          </div>
+          {/* CORREÇÃO: Caixa */}
+          <div className="flex justify-between items-center mb-4"><span className="text-sm font-medium text-gray-500">Caixa</span><Wallet className="text-[#0a003d]" size={20} /></div>
           <h3 className={`text-3xl font-semibold tracking-tight ${saldo >= 0 ? 'text-gray-900' : 'text-red-600'}`}>{formatarMoeda(saldo)}</h3>
         </div>
+        
+        <div className={`${cardEstilo} bg-emerald-50 border-emerald-100`}>
+          <div className="flex justify-between items-center mb-4"><span className="text-sm font-medium text-emerald-800">A receber (Mês seguinte)</span><Receipt className="text-emerald-600" size={20} /></div>
+          <h3 className="text-3xl font-semibold text-emerald-900 tracking-tight tabular-nums">{formatarMoeda(aReceberProximoMes)}</h3>
+        </div>
+        
         <div className={cardEstilo}>
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-sm font-medium text-gray-500">Clientes</span>
-            <Users className="text-[#ffab40]" size={20} />
-          </div>
+          {/* CORREÇÃO: Clientes */}
+          <div className="flex justify-between items-center mb-4"><span className="text-sm font-medium text-gray-500">Clientes</span><Users className="text-[#ffab40]" size={20} /></div>
           <h3 className="text-3xl font-semibold text-gray-900 tracking-tight">{totalClientesAtivos}</h3>
-          <p className="text-xs text-gray-500 mt-2 font-medium">
-            <span className="text-emerald-600">{pagamentosEmDia} em dia</span> <span className="text-gray-300 mx-1">|</span> <span className="text-red-500">{pagamentosAtrasados} atrasos</span>
-          </p>
+          <p className="text-xs text-gray-500 mt-2 font-medium"><span className="text-emerald-600">{pagamentosEmDia} em dia</span> | <span className="text-red-500">{pagamentosAtrasados} atrasos</span></p>
         </div>
       </div>
 
@@ -187,7 +194,7 @@ export default function DashboardPage() {
               <BarChart data={dadosPerformance} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} ticks={[0, 25000, 50000, 100000]} domain={[0, 100000]} tickFormatter={formatarEixoY} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} tickFormatter={formatarEixoY} />
                 <RechartsTooltip cursor={{ fill: '#f9fafb' }} contentStyle={{ borderRadius: '8px', border: '1px solid #f3f4f6', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '13px' }} />
                 <Bar dataKey="Entrada" fill="#0097a7" radius={[4, 4, 0, 0]} barSize={16} />
                 <Bar dataKey="Saida" fill="#1f2937" radius={[4, 4, 0, 0]} barSize={16} />

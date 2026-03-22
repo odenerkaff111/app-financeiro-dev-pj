@@ -21,8 +21,7 @@ export function TransactionFormModal({ aberto, onClose, carregarDados, edicaoDat
   const [enviarEmail, setEnviarEmail] = useState(false);
   const [uploading, setUploading] = useState(false);
   
-  // NOVA LÓGICA KIWIFY
-  const [tipoCobranca, setTipoCobranca] = useState('Única'); // Única, Parcelada, Assinatura
+  const [tipoCobranca, setTipoCobranca] = useState('Única');
   const [qtdParcelas, setQtdParcelas] = useState(2);
   const [cicloAssinatura, setCicloAssinatura] = useState('Mensal');
 
@@ -78,27 +77,26 @@ export function TransactionFormModal({ aberto, onClose, carregarDados, edicaoDat
       emitiu_nota_fiscal: form.emitiu_nota_fiscal, arquivo_nf: url_nf
     };
 
-    // MOTOR DE GERAÇÃO KIWIFY (Parcelado ou Assinatura)
     if (!edicaoData && tipoCobranca !== 'Única') {
-      const iteracoes = tipoCobranca === 'Parcelada' ? qtdParcelas : 12; // Se for assinatura, projeta 12 meses pro futuro
+      const iteracoes = tipoCobranca === 'Parcelada' ? qtdParcelas : 12;
       
       for (let i = 0; i < iteracoes; i++) {
         const dataVenc = new Date(form.data);
-        if (tipoCobranca === 'Parcelada' || (tipoCobranca === 'Assinatura' && cicloAssinatura === 'Mensal')) {
+        if (tipoCobranca === 'Parcelada' || (tipoCobranca === 'Recorrente' && cicloAssinatura === 'Mensal')) {
             dataVenc.setMonth(dataVenc.getMonth() + i);
-        } else if (tipoCobranca === 'Assinatura' && cicloAssinatura === 'Anual') {
+        } else if (tipoCobranca === 'Recorrente' && cicloAssinatura === 'Anual') {
             dataVenc.setFullYear(dataVenc.getFullYear() + i);
         }
         const dataFormatada = dataVenc.toISOString().split('T')[0];
         
         let desc = form.descricao;
         if (tipoCobranca === 'Parcelada') desc = `${form.descricao} (Parcela ${i+1}/${qtdParcelas})`;
-        if (tipoCobranca === 'Assinatura') desc = `${form.descricao} (Recorrência ${i+1})`;
+        if (tipoCobranca === 'Recorrente') desc = `${form.descricao} (Recorrência ${i+1})`;
 
         transacoesParaSalvar.push({
           ...baseTransacao, valor: valorNum, data_competencia: dataFormatada, data_vencimento: dataFormatada,
           data_pagamento: (form.status === 'Pago' || form.status === 'Recebido') && i === 0 ? dataFormatada : null,
-          status: i === 0 ? form.status : 'Pendente', // Só a primeira parcela entra com o status que você selecionou
+          status: i === 0 ? form.status : 'Pendente',
           descricao: desc
         });
       }
@@ -118,7 +116,6 @@ export function TransactionFormModal({ aberto, onClose, carregarDados, edicaoDat
       error = err;
     }
     
-    // Dispara múltiplos e-mails separados por vírgula
     if (!error && enviarEmail && url_nf && form.email_cliente) {
       const emails = form.email_cliente.split(',').map(e => e.trim()).filter(e => e);
       for (const email of emails) {
@@ -232,7 +229,8 @@ export function TransactionFormModal({ aberto, onClose, carregarDados, edicaoDat
                 <select className="w-full p-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#0097a7] bg-white" value={tipoCobranca} disabled={!!edicaoData} onChange={e => setTipoCobranca(e.target.value)}>
                   <option value="Única">Única</option>
                   <option value="Parcelada">Parcelada</option>
-                  <option value="Assinatura">Assinatura (Recorrente)</option>
+                  {/* AJUSTE: Label alterado de Assinatura para Recorrente */}
+                  <option value="Recorrente">Recorrente</option>
                 </select>
               </div>
               <div>
@@ -251,7 +249,7 @@ export function TransactionFormModal({ aberto, onClose, carregarDados, edicaoDat
               </div>
             )}
 
-            {!edicaoData && tipoCobranca === 'Assinatura' && (
+            {!edicaoData && tipoCobranca === 'Recorrente' && (
               <div className="pt-3 border-t border-gray-50">
                 <label className="block text-[11px] font-semibold text-[#0097a7] uppercase tracking-wider mb-2">Ciclo de Cobrança</label>
                 <select className="w-full p-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#0097a7] bg-white" value={cicloAssinatura} onChange={e => setCicloAssinatura(e.target.value)}>
